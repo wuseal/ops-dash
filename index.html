@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cycle Ops · Live Portfolio</title>
+<style>
+  :root {
+    --bg: #0d1117; --card: #161b22; --card-border: #21262d;
+    --text: #e6edf3; --muted: #8b949e;
+    --green: #3fb950; --red: #f85149; --amber: #d29922;
+    --blue: #58a6ff; --purple: #bc8cff; --teal: #39c5cf; --orange: #f0883e;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+    padding: 32px 24px 48px; max-width: 1100px; margin: 0 auto; }
+  header { display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+  h1 .sub { color: var(--muted); font-weight: 400; }
+  .status { display: flex; align-items: center; gap: 10px; color: var(--muted);
+    font-size: 13px; font-variant-numeric: tabular-nums; }
+  .status .warn { color: var(--amber); }
+  .live { width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+    animation: pulse 2s infinite; flex-shrink: 0; }
+  .live.bad { background: var(--red); }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+  .prices .up { color: var(--green); font-size: 10px; }
+  .prices .down { color: var(--red); font-size: 10px; }
+  button { background: #21262d; color: var(--text); border: 1px solid var(--card-border);
+    border-radius: 6px; padding: 4px 12px; font-size: 12px; cursor: pointer; }
+  button:hover { background: #30363d; }
+  .prices { display: flex; gap: 18px; flex-wrap: wrap; color: var(--muted);
+    font-size: 13px; margin-bottom: 28px; font-variant-numeric: tabular-nums; }
+  .prices b { color: var(--text); font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--card-border);
+    border-radius: 12px; padding: 20px 22px; }
+  .span-4 { grid-column: span 4; }
+  .span-6 { grid-column: span 6; }
+  @media (max-width: 800px) { .span-4, .span-6 { grid-column: span 12; } }
+  .label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--muted); margin-bottom: 8px; }
+  .big { font-size: 34px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
+  .big small { font-size: 16px; color: var(--muted); font-weight: 400; }
+  .delta { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .gauge-wrap { display: flex; align-items: center; gap: 20px; }
+  .donut { width: 110px; height: 110px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; position: relative; flex-shrink: 0; }
+  .donut::before { content: ""; position: absolute; width: 78px; height: 78px;
+    background: var(--card); border-radius: 50%; }
+  .donut span { position: relative; font-size: 20px; font-weight: 700; }
+  .redline-note { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 999px;
+    font-size: 12px; font-weight: 600; margin-top: 6px; }
+  .pill.red { background: rgba(248,81,73,.15); color: var(--red); border: 1px solid rgba(248,81,73,.4); }
+  .pill.green { background: rgba(63,185,80,.15); color: var(--green); border: 1px solid rgba(63,185,80,.4); }
+  .alloc-bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; margin: 14px 0 16px; }
+  .alloc-bar div { height: 100%; }
+  .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; font-size: 13px; }
+  .legend .row { display: flex; justify-content: space-between; align-items: center; }
+  .legend .name { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .legend .val { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .meter { margin-top: 10px; }
+  .meter .track { height: 8px; background: #21262d; border-radius: 4px; overflow: hidden; }
+  .meter .fill { height: 100%; border-radius: 4px; }
+  .meter .row { display: flex; justify-content: space-between; font-size: 12px;
+    color: var(--muted); margin-top: 5px; font-variant-numeric: tabular-nums; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  th { text-align: left; color: var(--muted); font-weight: 500; font-size: 12px;
+    text-transform: uppercase; letter-spacing: .5px; padding: 6px 8px; border-bottom: 1px solid var(--card-border); }
+  td { padding: 8px; border-bottom: 1px solid var(--card-border); }
+  tr:last-child td { border-bottom: none; }
+  td.num { text-align: right; font-weight: 600; }
+  th.num { text-align: right; }
+  .tag { font-size: 11px; color: var(--muted); }
+  .ladder { display: flex; align-items: flex-end; gap: 6px; margin-top: 12px; height: 120px; }
+  .rung { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; }
+  .rung .bar { width: 100%; border-radius: 6px 6px 0 0; background: #21262d;
+    border: 1px solid var(--card-border); border-bottom: none; }
+  .rung .price { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: center; }
+  .rung.current .bar { background: rgba(88,166,255,.25); border-color: var(--blue); }
+  .rung.current .price { color: var(--blue); font-weight: 700; }
+  .ladder-note { font-size: 12px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+  ul.flags { list-style: none; font-size: 13.5px; line-height: 2; }
+  ul.flags li::before { content: "\25B8  "; color: var(--muted); }
+  ul.flags .warn { color: var(--amber); }
+  ul.flags .bad { color: var(--red); }
+  ul.flags .ok { color: var(--green); }
+  footer { margin-top: 28px; color: var(--muted); font-size: 12px; text-align: center; }
+  #gate { display: none; position: fixed; inset: 0; background: var(--bg);
+    z-index: 10; align-items: center; justify-content: center; }
+  .gate-card { background: var(--card); border: 1px solid var(--card-border);
+    border-radius: 12px; padding: 32px 36px; width: 320px; text-align: center; }
+  .gate-card h2 { font-size: 18px; margin-bottom: 4px; }
+  .gate-card p { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+  .gate-card input[type="password"] { width: 100%; background: #0d1117; color: var(--text);
+    border: 1px solid var(--card-border); border-radius: 6px; padding: 8px 10px;
+    font-size: 14px; margin-bottom: 12px; }
+  .gate-card input[type="password"]:focus { outline: none; border-color: var(--blue); }
+  .gate-card .rem { display: flex; align-items: center; gap: 6px; color: var(--muted);
+    font-size: 12px; margin-bottom: 14px; cursor: pointer; }
+  .gate-card button { width: 100%; padding: 8px; font-size: 13px; }
+  .gate-card .err { color: var(--red); font-size: 12px; margin-top: 10px; min-height: 16px; }
+</style>
+</head>
+<body>
+<div id="gate">
+  <div class="gate-card">
+    <h2>Cycle Ops</h2>
+    <p>Enter the password to decrypt the dashboard</p>
+    <input type="password" id="pw" autocomplete="current-password" placeholder="Password">
+    <label class="rem"><input type="checkbox" id="remember" checked> Remember on this device</label>
+    <button id="unlock">Unlock</button>
+    <div id="gate-err" class="err"></div>
+  </div>
+</div>
+<header>
+  <h1>Cycle Ops <span class="sub">· Live Portfolio</span></h1>
+  <div class="status"><span class="live" id="live"></span><span id="status">locked</span><button id="refresh">Refresh</button><button id="lock" title="Forget the saved key on this device and lock">Lock</button></div>
+</header>
+<div class="prices" id="prices"></div>
+<div class="grid" id="app"></div>
+<footer id="foot"></footer>
+<script>
+// 加密载荷:wallets/常量/初始快照全部在 ct 内,密码错误则无法读出任何敏感数据
+const ENC = {"iter": 300000, "salt": "pTXEiOGCtY8iboHO3EQV7A==", "iv": "OrmwvMN20EO9gScKWjrtkg==", "ct": "fg1tsRr7o3uR5U7ozVZv2tCekUabdYsCb/boglfQLKtotqntEp2E2D5m2k2xNxFHjaNvg4dpYLDdP8/amU1qm4i9i+z5RsGDqBEEakwVdxVMNMV5Z4h+mZ872tYtq29NLZXxugdWwNWx5X4Jffb/rTNkRwiruj2vfAiU7qqjVHBYcEg/qYBzNd88EIb3i3aWvT+VnO6EaB6luAQhyqxWrt1O525aOlgaVSFNGZ/yEKSrt8WUjjsSRNYhjBv2grj8EefW5KjnoK1tXvdrc2HF8VbfOsA4Txub8hmmBDwZrdF8cujBV+sS3uC0i126GdiprSPhwwxLGKBf9t0AXTnlqAE0q89b1xEWZYucLkPZCxtrN3PyXFC/QUNBDSkqROBUWs1d/+5aBjDc4EaJsmDG5A6TKtZ06Ex1jV+IbBsbYJTQoWREeO6k+XDAgJJz0zSQ0UadvxeoqmUsn7uZ2ekQ2Lg3TlQXvKqygZUdP2VtIK4spfs4uinfuKRz5RjfCu9U5c4yjphJxaB7lmBdlmyXCRurU/W2kkT8W5sytucySWctDVn4X0xlUuvNVc5VIGCnm5gjuSak+2rdLyG09kxgtPNOzKAWNsypWFri5m09NUPk1tgNthHVbF15EGMUedUn+IYnh0OIf01V5vJulWpUuUzdzyd9s1Aw/EwpD2axEZxV7R1zYjkl+kZalSBfEEKODT/dAyxx3FRDkn4lSPI1ENavjdkzduXBAXbbR0O3rZiTAtUUpRmRKsBKcDhIlakZHF86PSHfK3IcV27xzL/bK6J1upXDfWRe547qPXZNmpjDZwOZUXaRdjo9Ee3f3CEkeiYx3JndPBjHlI9B5LdQ/HOl9rDQmh3PqPBp2wbt9qWNhiNFH96B/pZg35HLEe4yCQHTri8lMYH6Yf4x0tlCr8PlA72yZTIgQqcZ0QbxEdx4LwSnd2FWCXYeh/wfHeuiovlxEWNAKX9pcwPlDFeJhEhqaaNmklu6FqfhDNAVfYRM2mtWdzMIFpdrNkeZtb0qs6BR4gtxCbMsuHXQzvrcLDihPW1Enj/TJdonBy07OIpJ1n9faOatsHS9HJEHE6LaJqRj2RGndX2GmN0BYeSxf/lFYwRWDJbDuTnE4AXZr5CZfvq6ALsRYuxcAILGCAkw1v+aOHfiRIpo8eydklSDwC2bl5s5XSrZKu/MGo6UpXLdn4W5BdY6fKV5NH1lMbjArOlI76dylEbOi7A+orHs9pdHyhUQMHz7Bf/JZsSNheMiyGwlA/Pd2SpQx6Z9/rNlYysR2ubUk2l+MKCVIAeNBIGImyAR3PCLLCD27YElvTtdgOOwwP90KnCtnapxr1BVKFBGOq/hzXAnK+UG8oZuSkNNGnYvTZLpLNrsR3aMgDluhM2q40Mq8ZmWjPoEv0lm/fRvKkgb7jylXuM6kJ/dvxJ7Sd5RyPKPsAg1JK/f8lWAGwwQ++TYVLrYdqOdo/5FpKCQ2if2HudQM2todxcibgXDeSRXpb4/uD7w6Xz8Z3Qu8BISS6StpYf/h1Qs4+VQPfyAa7tXF7BoyR0f8osN112lYnbAsrNXNgaoa6A+67wWPqiwYlW9KrEP67zMyZgchNCrFC9CVJLL6lWTJF0NYZUAVbLYcMhzWrvMxgGUEghkbqNTRKtn/yn2gmDGI15NpRJ5KVUT8g/ISWvcLnPBurMbkRwsVEP7a7zVgGMpOvSpmu6vOqI+ti+bILAJWD3n0izQbaQLtkCqQJ/3YQ1Tv3z/fB0dOI3LSS/Z17F0h6qjlGl2VlDUUs4b8BZnk8LRqBtNYpvzg5HUPw8t/ur8JnqTDWGP4zsaCjlGcpQ64Rt+WiifCjJRu0ssQDucrX5PLOtHo0MzUpXdnAJuY2Xgt+wq/t8FQ9IkFjojarERL9AmKKaYZ0wKKWqkGfSVyr9v", "mac": "+BM7xG/zkz/7CASUQlUnGRdSzYhPUIlOdEa3gCgym4g="};
+let CONFIG = null;
+let state = null;
+let booted = false;
+let busy = false;
+let prevPrices = null;
+let priceError = false;
+
+const $ = id => document.getElementById(id);
+const usd0 = n => "$" + Math.round(n).toLocaleString("en-US");
+const n0 = n => Math.round(n).toLocaleString("en-US");
+const n1 = n => n.toLocaleString("en-US", {minimumFractionDigits: 1, maximumFractionDigits: 1});
+const n2 = n => n.toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const pct1 = x => (x * 100).toFixed(1) + "%";
+
+async function httpJson(url, opts) {
+  const r = await fetch(url, opts);
+  if (!r.ok) throw new Error(url.split("/")[2] + " HTTP " + r.status);
+  return r.json();
+}
+async function rpcCall(method, params) {
+  const j = await httpJson(CONFIG.rpc, {method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({jsonrpc: "2.0", id: 1, method, params})});
+  if (j.error) throw new Error("RPC " + method + ": " + JSON.stringify(j.error));
+  return j.result;
+}
+async function ethCall(to, data) {
+  const j = await httpJson(CONFIG.ethRpc, {method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({jsonrpc: "2.0", id: 1, method: "eth_call",
+                          params: [{to, data}, "latest"]})});
+  if (j.error) throw new Error("eth_call: " + JSON.stringify(j.error));
+  return j.result;
+}
+
+async function getPrices() {
+  const d = await httpJson("https://api.coingecko.com/api/v3/simple/price"
+    + "?ids=solana,bitcoin,ethena,raydium,aster-2&vs_currencies=usd");
+  return {SOL: d.solana.usd, BTC: d.bitcoin.usd, ENA: d.ethena.usd,
+          RAY: d.raydium.usd, ASTER: d["aster-2"].usd};
+}
+async function nativeStake(addr) {
+  const accs = await rpcCall("getProgramAccounts", ["Stake11111111111111111111111111111111111111",
+    {encoding: "jsonParsed", filters: [{memcmp: {offset: 44, bytes: addr}}]}]);
+  return {sol: accs.reduce((s, a) => s + a.account.lamports, 0) / 1e9, n: accs.length};
+}
+async function walletUsdc(addr) {
+  const r = await rpcCall("getTokenAccountsByOwner",
+    [addr, {mint: CONFIG.usdcMint}, {encoding: "jsonParsed"}]);
+  return r.value.reduce((s, a) =>
+    s + parseFloat(a.account.data.parsed.info.tokenAmount.uiAmountString), 0);
+}
+async function walletSol(addr) {
+  return (await rpcCall("getBalance", [addr])).value / 1e9;
+}
+function kaminoUrl(market) {
+  return "https://api.kamino.finance/kamino-market/" + market
+       + "/users/" + CONFIG.walletKamino + "/obligations";
+}
+async function kaminoLoop() {
+  let coll = 0, debt = 0;
+  for (const ob of await httpJson(kaminoUrl(CONFIG.marketMain))) {
+    for (const dep of ob.state.deposits)
+      if (dep.depositedAmount !== "0")
+        coll += Number(dep.depositedAmount) / 1e9 * CONFIG.stkesolRate;
+    for (const bor of ob.state.borrows)
+      if ((bor.borrowedAmountSf || "0") !== "0")
+        debt += Number(BigInt(bor.borrowedAmountSf) >> 60n) / 1e9;
+  }
+  return {coll, debt};
+}
+async function kaminoOnre() {
+  let onycU = 0, usdcLendU = 0;
+  for (const ob of await httpJson(kaminoUrl(CONFIG.marketOnre))) {
+    const st = ob.state;
+    let depU = 0, borU = 0;
+    for (const dep of st.deposits)
+      if (dep.depositedAmount !== "0") {
+        const raw = Number(dep.depositedAmount);
+        depU += (+st.tag === 0) ? raw / 1e6 * CONFIG.usdcLendRate
+                                : raw / 1e9 * CONFIG.onycNav;
+      }
+    for (const bor of st.borrows)
+      if ((bor.borrowedAmountSf || "0") !== "0")
+        borU += Number(BigInt(bor.borrowedAmountSf) >> 60n) / 1e6;
+    if (+st.tag === 0) usdcLendU += depU; else onycU += depU - borU;
+  }
+  return {onycU, usdcLendU};
+}
+async function enaStaked() {
+  const user = CONFIG.walletEth.slice(2).toLowerCase().padStart(64, "0");
+  const token = CONFIG.sena.slice(2).toLowerCase().padStart(64, "0");
+  let raw = await ethCall(CONFIG.enaLpStaking, "0xa4e47b66" + user + token);
+  const sena = BigInt("0x" + raw.slice(2, 66));
+  raw = await ethCall(CONFIG.sena, "0x07a2d13a" + sena.toString(16).padStart(64, "0"));
+  return Number(BigInt(raw)) / 1e18;
+}
+async function rayStaked() {
+  const v = (await rpcCall("getAccountInfo", [CONFIG.rayLedger, {encoding: "base64"}])).value;
+  if (!v) return 0;
+  const b = Uint8Array.from(atob(v.data[0]), c => c.charCodeAt(0));
+  let x = 0n;
+  for (let i = 7; i >= 0; i--) x = (x << 8n) | BigInt(b[72 + i]);
+  return Number(x) / 1e6;
+}
+
+function derive(s) {
+  const px = s.prices, oc = CONFIG.offchain;
+  const equity = s.collateral - s.debt;
+  const lev = equity > 0 ? s.collateral / equity : 0;
+  const govU = s.ena * px.ENA + s.ray * px.RAY + oc.asterAmt * px.ASTER;
+  const solTotal = s.mndeSol + equity + s.wSol;
+  const solU = solTotal * px.SOL;
+  const btcU = oc.btcCold * px.BTC;
+  const stablesU = s.usdcLendU + s.wUsdc + oc.treasuryU + oc.dryPowderU + oc.otherStablesU;
+  const total = solU + btcU + s.onycU + govU + stablesU;
+  return {equity, lev, govU, solTotal, solU, btcU, stablesU, total,
+          share: total ? solU / total : 0, dryU: s.wUsdc + oc.dryPowderU};
+}
+
+const b64d = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const b64e = u8 => btoa(String.fromCharCode(...u8));
+
+async function deriveKey(password) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(password),
+    "PBKDF2", false, ["deriveBits"]);
+  return new Uint8Array(await crypto.subtle.deriveBits(
+    {name: "PBKDF2", salt: b64d(ENC.salt), iterations: ENC.iter, hash: "SHA-256"}, base, 512));
+}
+// 前 32 字节 AES-256-CBC 密钥,后 32 字节 HMAC-SHA256 密钥;MAC 校验通过才解密
+async function tryKey(dk) {
+  const iv = b64d(ENC.iv), ct = b64d(ENC.ct);
+  const macKey = await crypto.subtle.importKey("raw", dk.slice(32),
+    {name: "HMAC", hash: "SHA-256"}, false, ["verify"]);
+  const data = new Uint8Array(iv.length + ct.length);
+  data.set(iv); data.set(ct, iv.length);
+  if (!await crypto.subtle.verify("HMAC", macKey, b64d(ENC.mac), data)) return null;
+  const aesKey = await crypto.subtle.importKey("raw", dk.slice(0, 32), "AES-CBC", false, ["decrypt"]);
+  const pt = await crypto.subtle.decrypt({name: "AES-CBC", iv}, aesKey, ct);
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+
+function ago(iso) {
+  const s = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  return s < 60 ? s + "s" : Math.floor(s / 60) + "m " + (s % 60) + "s";
+}
+function setStatus(text) {
+  if (!booted) return;
+  const warn = (state.warnings || []).length + (priceError ? 1 : 0);
+  $("live").className = "live" + (warn ? " bad" : "");
+  $("status").innerHTML = text ? text :
+    "prices " + ago(state.pricesAt) + " ago · on-chain " + ago(state.onchainAt) + " ago"
+    + (priceError ? ' · <span class="warn">price refresh failing</span>' : "")
+    + ((state.warnings || []).length
+       ? ' · <span class="warn">degraded (' + state.warnings.length + ")</span>" : "");
+}
+
+function render() {
+  if (!booted) return;
+  const s = state, px = s.prices, oc = CONFIG.offchain, v = derive(s);
+  const overLine = v.share >= CONFIG.solShareLine;
+  const unwinding = s.debt > 10;
+  const dryPct = v.total ? v.dryU / v.total : 0;
+  const lineTxt = (CONFIG.solShareLine * 100).toFixed(0) + "%";
+  const pctOf = x => (v.total ? x / v.total * 100 : 0).toFixed(1);
+  const levTxt = v.lev.toFixed(2) + "x";
+  const levStatus = unwinding ? "unwinding" : "debt cleared";
+
+  const arrow = k => (!prevPrices || prevPrices[k] === px[k]) ? "" :
+    (px[k] > prevPrices[k] ? ' <span class="up">&#9650;</span>'
+                           : ' <span class="down">&#9660;</span>');
+  $("prices").innerHTML = [
+    ["SOL", "$" + n2(px.SOL)], ["BTC", usd0(px.BTC)], ["ENA", "$" + px.ENA.toFixed(4)],
+    ["RAY", "$" + px.RAY.toFixed(3)], ["ASTER", "$" + px.ASTER.toFixed(3)],
+  ].map(([k, t]) => "<span>" + k + " <b>" + t + "</b>" + arrow(k) + "</span>").join("");
+
+  const levels = [[250, false], [350, false], [500, false], [600, false], [700, false], [800, false],
+                  [Math.round(px.SOL), true]].sort((a, b) => a[0] - b[0]);
+  const top = Math.max(...levels.map(l => l[0]));
+  const ladder = levels.map(([p, cur]) =>
+    `<div class="rung${cur ? " current" : ""}"><div class="bar" style="height:${Math.max(6, p / top * 100).toFixed(0)}%"></div><div class="price">$${p.toLocaleString()}${cur ? "<br>now" : ""}</div></div>`
+  ).join("");
+
+  const flags = (s.warnings || []).map(w => `<li><span class="bad">${w}</span></li>`);
+  flags.push(overLine
+    ? `<li><span class="warn">SOL share ${pct1(v.share)} ≥ ${lineTxt}</span> — next batch/monthly buy goes to BTC</li>`
+    : `<li><span class="ok">SOL share ${pct1(v.share)} &lt; ${lineTxt}</span> — next buy goes to SOL into Marinade</li>`);
+  flags.push(dryPct < 0.10
+    ? `<li><span class="warn">Dry powder ${pct1(dryPct)}</span> vs 10% target</li>`
+    : `<li><span class="ok">Dry powder ${pct1(dryPct)}</span> — at/above 10% target</li>`);
+  flags.push(unwinding
+    ? `<li><span class="warn">Debt unwind in progress</span> — ${n0(s.debt)} SOL outstanding at ${levTxt}</li>`
+    : `<li><span class="ok">stkeSOL debt cleared</span></li>`);
+  if (s.usdcLendU > 100)
+    flags.push(`<li><span class="warn">${usd0(s.usdcLendU)} stables still in Kamino</span> — pending withdrawal</li>`);
+  flags.push("<li>Verify: remaining stkeSOL blended APY ≥ 6.5%?</li>",
+             "<li>Verify: Kamino share falling month-over-month?</li>",
+             "<li>Verify: RAY rewards harvested to living expenses?</li>");
+
+  const deg = (v.share * 360).toFixed(1) + "deg";
+  $("app").innerHTML = `
+  <div class="card span-4">
+    <div class="label">Total Assets</div>
+    <div class="big">${usd0(v.total)}</div>
+    <div class="delta">incl. treasury &amp; off-chain items</div>
+    <div class="meter" style="margin-top:18px">
+      <div class="label" style="margin-bottom:6px">Dry Powder · target 10%</div>
+      <div class="track"><div class="fill" style="width:${Math.min(dryPct / 0.10 * 100, 100).toFixed(0)}%; background:var(--${dryPct >= 0.10 ? "green" : "amber"})"></div></div>
+      <div class="row"><span>${usd0(v.dryU)}</span><span>${(dryPct * 100).toFixed(1)}% / 10%</span></div>
+    </div>
+  </div>
+  <div class="card span-4">
+    <div class="label">SOL Share vs ${lineTxt} Red Line</div>
+    <div class="gauge-wrap">
+      <div class="donut" style="background: conic-gradient(var(--${overLine ? "red" : "green"}) 0deg ${deg}, #21262d ${deg} 360deg)"><span>${(v.share * 100).toFixed(1)}%</span></div>
+      <div class="redline-note">
+        ${overLine ? "Above" : "Below"} the red line.<br>
+        <span class="pill ${overLine ? "red" : "green"}">${overLine ? "Next buy → BTC" : "Next buy → SOL into Marinade"}</span><br>
+        <span style="font-size:12px">${overLine ? "Binance → BTC mainnet → cold wallet" : "monthly cash never enters Kamino"}</span>
+      </div>
+    </div>
+  </div>
+  <div class="card span-4">
+    <div class="label">Kamino stkeSOL Leverage</div>
+    <div class="big">${levTxt}<small> ${levStatus}</small></div>
+    <div class="delta">debt ${n0(s.debt)} SOL · net ${n0(v.equity)} SOL</div>
+    <div class="meter" style="margin-top:18px">
+      <div class="label" style="margin-bottom:6px">Collateral vs Debt (SOL)</div>
+      <div class="track"><div class="fill" style="width:${(s.collateral ? s.debt / s.collateral * 100 : 0).toFixed(1)}%; background:var(--blue)"></div></div>
+      <div class="row"><span>debt ${n0(s.debt)}</span><span>collateral ${n0(s.collateral)}</span></div>
+    </div>
+  </div>
+  <div class="card span-6">
+    <div class="label">Allocation</div>
+    <div class="alloc-bar">
+      <div style="width:${pctOf(v.solU)}%; background:var(--blue)"></div>
+      <div style="width:${pctOf(v.btcU)}%; background:var(--orange)"></div>
+      <div style="width:${pctOf(v.stablesU)}%; background:var(--green)"></div>
+      <div style="width:${pctOf(s.onycU)}%; background:var(--purple)"></div>
+      <div style="width:${pctOf(v.govU)}%; background:var(--teal)"></div>
+    </div>
+    <div class="legend">
+      <div class="row"><span class="name"><i class="dot" style="background:var(--blue)"></i>SOL (${n0(v.solTotal)})</span><span class="val">${usd0(v.solU)}</span></div>
+      <div class="row"><span class="name"><i class="dot" style="background:var(--green)"></i>Stables</span><span class="val">${usd0(v.stablesU)}</span></div>
+      <div class="row"><span class="name"><i class="dot" style="background:var(--purple)"></i>ONYC</span><span class="val">${usd0(s.onycU)}</span></div>
+      <div class="row"><span class="name"><i class="dot" style="background:var(--teal)"></i>Governance</span><span class="val">${usd0(v.govU)}</span></div>
+      <div class="row"><span class="name"><i class="dot" style="background:var(--orange)"></i>BTC cold wallet (${oc.btcCold})</span><span class="val">${usd0(v.btcU)}</span></div>
+    </div>
+  </div>
+  <div class="card span-6">
+    <div class="label">Positions</div>
+    <table>
+      <tr><th>Position</th><th class="num">Amount</th><th class="num">Note</th></tr>
+      <tr><td>Native staking (2 wallets)</td><td class="num">${n1(s.mndeSol)} SOL</td><td class="num tag">${s.nAccounts} stake accounts</td></tr>
+      <tr><td>Kamino stkeSOL net</td><td class="num">${n0(v.equity)} SOL</td><td class="num tag">${levTxt}, ${levStatus}</td></tr>
+      <tr><td>Kamino stables (to withdraw)</td><td class="num">${usd0(s.usdcLendU)}</td><td class="num tag">target: withdraw to zero</td></tr>
+      <tr><td>Wallet</td><td class="num">${n0(s.wUsdc)} USDC + ${s.wSol.toFixed(2)} SOL</td><td class="num tag">counts toward dry powder</td></tr>
+      <tr><td>ENA staked</td><td class="num">${n0(s.ena)}</td><td class="num tag">${s.enaSrc}</td></tr>
+      <tr><td>RAY staked</td><td class="num">${n0(s.ray)}</td><td class="num tag">${s.raySrc} · harvest → living expenses</td></tr>
+      <tr><td>ASTER staked</td><td class="num">${n0(oc.asterAmt)}</td><td class="num tag">manual · Aster Vault, locked to 2026-11</td></tr>
+    </table>
+  </div>
+  <div class="card span-6">
+    <div class="label">SOL Sell Ladder · current $${n2(px.SOL)}</div>
+    <div class="ladder">${ladder}</div>
+    <div class="ladder-note">Half sells in thirds at 250 / 350 / 500 · other half in thirds at 600 / 700 / 800</div>
+  </div>
+  <div class="card span-6">
+    <div class="label">Flags &amp; Manual Checks</div>
+    <ul class="flags">${flags.join("")}</ul>
+  </div>`;
+
+  $("foot").textContent = "Generated " + CONFIG.generated
+    + " by scripts/portfolio_check.py · data fetched live in-browser"
+    + " · on-chain data is the source of truth";
+  setStatus();
+}
+
+async function fetchAll() {
+  if (!booted || busy) return;
+  busy = true;
+  setStatus("refreshing on-chain data…");
+  const warnings = [];
+  const [prices, native, loop, onre, wallet, ena, ray] = await Promise.allSettled([
+    getPrices(),
+    Promise.all([nativeStake(CONFIG.walletMarinade), nativeStake(CONFIG.walletKamino)])
+      .then(([a, b]) => ({sol: a.sol + b.sol, n: a.n + b.n})),
+    kaminoLoop(),
+    kaminoOnre(),
+    Promise.all([walletUsdc(CONFIG.walletKamino), walletUsdc(CONFIG.walletMarinade),
+                 walletSol(CONFIG.walletKamino), walletSol(CONFIG.walletMarinade)])
+      .then(([u1, u2, s1, s2]) => ({usdc: u1 + u2, sol: s1 + s2})),
+    enaStaked(),
+    rayStaked(),
+  ]);
+  const pick = (r, label, fb) => {
+    if (r.status === "fulfilled") return r.value;
+    console.warn(label, r.reason);
+    warnings.push(label + " query failed — showing last known value");
+    return fb;
+  };
+  const now = new Date().toISOString();
+  prevPrices = state.prices;
+  const p = pick(prices, "prices", state.prices);
+  const nat = pick(native, "native staking", {sol: state.mndeSol, n: state.nAccounts});
+  const lp = pick(loop, "Kamino stkeSOL", {coll: state.collateral, debt: state.debt});
+  const onr = pick(onre, "Kamino OnRe", {onycU: state.onycU, usdcLendU: state.usdcLendU});
+  const w = pick(wallet, "wallet balances", {usdc: state.wUsdc, sol: state.wSol});
+  let enaV, rayV;
+  if (ena.status === "fulfilled") enaV = {amt: ena.value, src: "on-chain"};
+  else { console.warn("ENA", ena.reason);
+         warnings.push("ENA stake query failed — using fallback value");
+         enaV = {amt: CONFIG.offchain.govFallback.ENA, src: "fallback"}; }
+  if (ray.status === "fulfilled") rayV = {amt: ray.value, src: "on-chain"};
+  else { console.warn("RAY", ray.reason);
+         warnings.push("RAY stake query failed — using fallback value");
+         rayV = {amt: CONFIG.offchain.govFallback.RAY, src: "fallback"}; }
+  state = {prices: p, mndeSol: nat.sol, nAccounts: nat.n,
+           collateral: lp.coll, debt: lp.debt, onycU: onr.onycU, usdcLendU: onr.usdcLendU,
+           wUsdc: w.usdc, wSol: w.sol, ena: enaV.amt, enaSrc: enaV.src,
+           ray: rayV.amt, raySrc: rayV.src, onchainAt: now, pricesAt: now, warnings};
+  busy = false;
+  render();
+}
+
+async function refreshPrices() {
+  if (!booted || busy) return;
+  try {
+    const fresh = await getPrices();
+    prevPrices = state.prices;
+    state.prices = fresh;
+    state.pricesAt = new Date().toISOString();
+    priceError = false;
+    render();
+  } catch (e) { console.warn("price refresh failed", e); priceError = true; setStatus(); }
+}
+
+function boot(payload) {
+  CONFIG = payload.config;
+  state = payload.initial;
+  booted = true;
+  $("gate").style.display = "none";
+  setInterval(refreshPrices, 60000);     // 价格每 60s
+  setInterval(fetchAll, 600000);         // 链上仓位每 10min
+  setInterval(() => { if (!busy) setStatus(); }, 1000);  // 状态栏每秒走表
+  render();
+  fetchAll();
+}
+
+async function submitPw() {
+  const v = $("pw").value;
+  if (!v) return;
+  $("gate-err").textContent = "";
+  $("unlock").disabled = true;
+  $("unlock").textContent = "deriving key…";
+  try {
+    const dk = await deriveKey(v);
+    const payload = await tryKey(dk);
+    if (!payload) {
+      $("gate-err").textContent = "Wrong password";
+    } else {
+      if ($("remember").checked) localStorage.setItem("cycleops_k", b64e(dk));
+      boot(payload);
+    }
+  } catch (e) {
+    $("gate-err").textContent = "Unlock failed: " + e.message;
+  }
+  $("unlock").disabled = false;
+  $("unlock").textContent = "Unlock";
+}
+
+$("unlock").addEventListener("click", submitPw);
+$("pw").addEventListener("keydown", e => { if (e.key === "Enter") submitPw(); });
+$("refresh").addEventListener("click", fetchAll);
+$("lock").addEventListener("click", () => {
+  localStorage.removeItem("cycleops_k");
+  location.reload();
+});
+document.addEventListener("visibilitychange", () => {
+  if (booted && !document.hidden
+      && Date.now() - new Date(state.pricesAt).getTime() > 60000) refreshPrices();
+});
+
+(async () => {
+  const cached = localStorage.getItem("cycleops_k");  // 记住的是派生密钥,不是密码本身
+  if (cached) {
+    try {
+      const payload = await tryKey(b64d(cached));
+      if (payload) return boot(payload);
+    } catch (e) { console.warn("cached key invalid", e); }
+    localStorage.removeItem("cycleops_k");
+  }
+  $("gate").style.display = "flex";
+  $("pw").focus();
+})();
+</script>
+</body>
+</html>
